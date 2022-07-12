@@ -1,13 +1,18 @@
 import scipy.io
 import torch
+import csv
 import numpy as np
 from functions import prepare_stimulus
 from normalizationmodelofattention import NormalizationModelofAttention
 from tqdm import tqdm
 
 #project_path = '/scratch/et2160/nma/'
-project_path = '/Volumes/server/Projects/attentionpRF/Simulations/python_scripts/'
+#project_path = '/Volumes/server/Projects/attentionpRF/Simulations/python_scripts/'
 stimpath = project_path + 'stimfiles' + '/stim.mat'
+save_pth = project_path + '/results'
+save_name = '/model_output.csv'
+
+
 stimtemp = scipy.io.loadmat(stimpath)
 stimtemp = torch.from_numpy(stimtemp['stim']).to(torch.float32)
 stimorig = stimtemp[:,:,0:48]
@@ -37,6 +42,7 @@ optimizer = torch.optim.Adam([nma_fit.voxel_gain, # estimated per voxel
                               nma_fit.summation_field_sigma_factor],  # estimated for the ROI
                               lr=1e-1)
 
+# define the loss function
 loss_func = torch.nn.MSELoss()
 losses = []
 param_vals = {'prf_sigma_scale_factor': torch.tensor([]), 'attention_field_sigma': torch.tensor([]), 'attention_field_gain': torch.tensor([]),
@@ -55,3 +61,11 @@ for i in pbar:
         current_params[k] = v.clone().detach()
         param_vals[k] = torch.cat([param_vals[k], v.clone().detach()], -1)
     pbar.set_postfix(loss=losses[-1], **current_params)
+
+# save the output
+w = csv.writer(open(save_pth+save_name, "w"))
+
+for key, val in param_vals.items():
+    w.writerow([key,val])
+
+w.writerow(['losses',losses])
