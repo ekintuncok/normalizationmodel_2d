@@ -6,12 +6,11 @@ from functions import prepare_stimulus
 from normalizationmodelofattention import NormalizationModelofAttention
 from tqdm import tqdm
 
-#project_path = '/scratch/et2160/nma/'
+project_path = '/scratch/et2160/nma/'
 #project_path = '/Volumes/server/Projects/attentionpRF/Simulations/python_scripts/'
 stimpath = project_path + 'stimfiles' + '/stim.mat'
 save_pth = project_path + '/results'
 save_name = '/model_output.csv'
-
 
 stimtemp = scipy.io.loadmat(stimpath)
 stimtemp = torch.from_numpy(stimtemp['stim']).to(torch.float32)
