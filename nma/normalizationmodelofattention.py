@@ -1,11 +1,11 @@
 import torch
-from functions import create_spatial_grid
-from functions import create_gaussian_field
-from functions import create_prf_centers_torch
-from functions import interpolate_voxel_center
+from nma.functions import create_spatial_grid
+from nma.functions import create_gaussian_field
+from nma.functions import create_prf_centers_torch
+from nma.functions import interpolate_voxel_center
 
 class NormalizationModelofAttention(torch.nn.Module):
-    def __init__(self, normalization_sigma, voxeldata, attention_ctr, stim_ecc=10, prf_sigma_scale_factor=None,
+    def __init__(self, normalization_sigma,  attention_ctr, stim_ecc=10, voxeldata=None, prf_sigma_scale_factor=None,
                  attention_field_sigma=None,
                  attention_field_gain=None,
                  suppressive_surround_sigma_factor=None,
@@ -18,12 +18,20 @@ class NormalizationModelofAttention(torch.nn.Module):
         super().__init__()
         self.gridsize = 64
         x_coordinates, y_coordinates, self.X, self.Y = create_spatial_grid(stim_ecc, self.gridsize)
-        self.distance_vector, self.voxel_lookup_indices = interpolate_voxel_center(self.X, self.Y, voxeldata)
         self.RF_X, self.RF_Y = create_prf_centers_torch(x_coordinates, y_coordinates)
+
+        if eval('voxeldata') == None:
+            self.distance_vector = []
+            self.voxel_lookup_indices = range(0, self.gridsize * self.gridsize)
+            print('Voxel data is not inputted, using the full RF lookup indices to simulate data...')
+        else:
+            self.distance_vector, self.voxel_lookup_indices = interpolate_voxel_center(self.X, self.Y, voxeldata)
+
         self.attention_ctr = attention_ctr
         self.ROI_normalization_sigma_factor = normalization_sigma
         self.voxel_gain = torch.ones((1, len(self.RF_X)), dtype=torch.float32)
 
+        print('Evaluating if simulation parameters are inputted...')
         for k in ['prf_sigma_scale_factor', 'attention_field_sigma', 'attention_field_gain',
                   'suppressive_surround_sigma_factor', 'summation_field_sigma_factor']:
             v = eval(k)
@@ -41,11 +49,10 @@ class NormalizationModelofAttention(torch.nn.Module):
             stim = stim.unsqueeze(1)
             print("Stimulus is unsqueezed over the third dimension")
 
-        ##### PREALLOCATE #####
+        # PREALLOCATE
         receptive_field = torch.empty((self.gridsize, self.gridsize, self.gridsize * self.gridsize))
         suppressive_surround = torch.empty((self.gridsize * self.gridsize, self.gridsize * self.gridsize))
         summation_field = torch.empty((self.gridsize * self.gridsize, self.gridsize * self.gridsize))
-        ##### PREALLOCATE #####
 
         attfield = create_gaussian_field(self.X, self.Y, self.attention_ctr[0], self.attention_ctr[1],
                                          self.attention_field_sigma, None, False, True)
@@ -63,7 +70,7 @@ class NormalizationModelofAttention(torch.nn.Module):
             summation_field[..., rf] = create_gaussian_field(self.X, self.Y, self.RF_X[rf], self.RF_Y[rf],
                                                              rf_summ_sigma[rf], 'euclidean_distance', True, True)
 
-        ######
+
         stimulus_drive = torch.einsum('ijk,ija->ka', receptive_field, stim)
         numerator = torch.einsum('ij,i->ij', stimulus_drive, attfield)
         surroundresponse = torch.einsum('wr,rs->ws', suppressive_surround.T, numerator)
