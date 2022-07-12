@@ -8,7 +8,7 @@ def create_spatial_grid(stim_ecc, gridsize):
     NMA is strictly implemented for a formulated space, so the model will only work
     if the receptive fields are defined within the same grid as the input stimulus. """
 
-    coord = np.sqrt(((stim_ecc)**2)/2)
+    coord = np.sqrt((stim_ecc**2)/2)
     x_coordinates = torch.linspace(-coord, coord, gridsize)
     y_coordinates = torch.linspace(coord, -coord, gridsize)
     y_grid, x_grid = torch.meshgrid(x_coordinates, y_coordinates)
