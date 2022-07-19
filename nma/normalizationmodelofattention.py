@@ -4,8 +4,9 @@ from nma.functions import create_gaussian_field
 from nma.functions import create_prf_centers_torch
 from nma.functions import interpolate_voxel_center
 
+
 class NormalizationModelofAttention(torch.nn.Module):
-    def __init__(self, normalization_sigma,  attention_ctr, stim_ecc=10, voxeldata=None, prf_sigma_scale_factor=None,
+    def __init__(self, normalization_sigma, attention_ctr, stim_ecc=10, voxeldata=None, prf_sigma_scale_factor=None,
                  attention_field_sigma=None,
                  attention_field_gain=None,
                  suppressive_surround_sigma_factor=None,
@@ -20,7 +21,7 @@ class NormalizationModelofAttention(torch.nn.Module):
         x_coordinates, y_coordinates, self.X, self.Y = create_spatial_grid(stim_ecc, self.gridsize)
         self.RF_X, self.RF_Y = create_prf_centers_torch(x_coordinates, y_coordinates)
 
-        if eval('voxeldata') == None:
+        if eval('voxeldata') is None:
             self.distance_vector = []
             self.voxel_lookup_indices = range(0, self.gridsize * self.gridsize)
             print('Voxel data is not inputted, using the full RF lookup indices to simulate data...')
@@ -69,7 +70,6 @@ class NormalizationModelofAttention(torch.nn.Module):
                                                                   rf_supp_sigma[rf], 'euclidean_distance', True, True)
             summation_field[..., rf] = create_gaussian_field(self.X, self.Y, self.RF_X[rf], self.RF_Y[rf],
                                                              rf_summ_sigma[rf], 'euclidean_distance', True, True)
-
 
         stimulus_drive = torch.einsum('ijk,ija->ka', receptive_field, stim)
         numerator = torch.einsum('ij,i->ij', stimulus_drive, attfield)
