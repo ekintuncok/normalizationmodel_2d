@@ -1,4 +1,5 @@
 *.egg-info
 venv/*
 data/*
+matlab_scripts/*
 nma/__pycache__/*
