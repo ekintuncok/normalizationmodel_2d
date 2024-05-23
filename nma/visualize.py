@@ -1,29 +1,59 @@
 import numpy as np
+import scipy.io
 import torch
 import matplotlib.pyplot as plt
 from normalizationmodelofattention import NormalizationModelofAttention
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-normalization_sigma = 0.01
+from functions import prepare_stimulus
+from functions import create_spatial_grid
+from functions import create_prf_centers_torch
 
-nma = NormalizationModelofAttention(normalization_sigma, synt_voxeldata, attention_ctr, stim_ecc,
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+# load the stimulus
+stimpath = '/Users/ekintuncok/Documents/MATLAB/normalizationmodel_2d/matlab_scripts/stimfiles'
+stim_ecc = 12
+gridsize = 64
+
+stimtemp = scipy.io.loadmat(stimpath + '/stim.mat')
+stimtemp = stimtemp['stim']
+stimorig = stimtemp[:,:,0:48]
+
+input_stim = prepare_stimulus(stimorig, gridsize)
+x_coordinates, y_coordinates, X, Y = create_spatial_grid(stim_ecc, gridsize)
+lookup_prf_centers = create_prf_centers_torch(x_coordinates, y_coordinates)
+
+
+#### 
+normalization_sigma = 0.01
+rf_sigma_factor = 0.05
+attgain     = 4
+attx0       = 0
+atty0       = 5
+attsd       = 1
+sigmaNorm   = 0.01
+suppWeight  = 3
+summWeight  = 3
+attention_ctr = [-4,0]
+
+nma = NormalizationModelofAttention(normalization_sigma, attention_ctr, stim_ecc,
                                     prf_sigma_scale_factor = torch.tensor([0.06], dtype=torch.float32),
                                     attention_field_sigma = torch.tensor([1], dtype=torch.float32),
                                     attention_field_gain = torch.tensor([4], dtype=torch.float32),
                                     suppressive_surround_sigma_factor= torch.tensor([3], dtype=torch.float32),
                                     summation_field_sigma_factor=torch.tensor([3], dtype=torch.float32))
 
-numerator, surroundresponse, neuralresponse, populationresponse, pred_response, predicted_neural_response = nma(input_stim)
+
+numerator, surroundresponse, neuralresponse, populationresponse = nma(input_stim)
 
 
 numerator = numerator.detach().numpy()
 surroundresponse = surroundresponse.detach().numpy()
 neuralresponse = neuralresponse.detach().numpy()
 populationresponse = populationresponse.detach().numpy()
-pred_response = pred_response.detach().numpy()
 
 ### VISUALIZE
-gridsize = 64
-stimidx = 36
+stimidx = 13
+
 numerator_toplot = np.reshape(numerator[:,stimidx],(gridsize,gridsize))
 surroundresponse_toplot = np.reshape(surroundresponse[:,stimidx],(gridsize,gridsize))
 neuralresponse_toplot = np.reshape(neuralresponse[:,stimidx],(gridsize,gridsize))

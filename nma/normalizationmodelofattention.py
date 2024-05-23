@@ -1,8 +1,8 @@
 import torch
-from nma.functions import create_spatial_grid
-from nma.functions import create_gaussian_field
-from nma.functions import create_prf_centers_torch
-from nma.functions import interpolate_voxel_center
+from functions import create_spatial_grid
+from functions import create_gaussian_field
+from functions import create_prf_centers_torch
+from functions import interpolate_voxel_center
 
 
 class NormalizationModelofAttention(torch.nn.Module):
@@ -71,6 +71,7 @@ class NormalizationModelofAttention(torch.nn.Module):
             summation_field[..., rf] = create_gaussian_field(self.X, self.Y, self.RF_X[rf], self.RF_Y[rf],
                                                              rf_summ_sigma[rf], 'euclidean_distance', True, True)
 
+
         stimulus_drive = torch.einsum('ijk,ija->ka', receptive_field, stim)
         numerator = torch.einsum('ij,i->ij', stimulus_drive, attfield)
         surroundresponse = torch.einsum('wr,rs->ws', suppressive_surround.T, numerator)
@@ -86,4 +87,5 @@ class NormalizationModelofAttention(torch.nn.Module):
         predicted_neural_response = predicted_neural_weights_lookup[self.voxel_lookup_indices]
         predicted_voxel_response = predicted_voxel_weigths_lookup[self.voxel_lookup_indices]
 
-        return predicted_voxel_response
+        #return predicted_voxel_response
+        return numerator, surroundresponse, predicted_neural_response, predicted_voxel_response
